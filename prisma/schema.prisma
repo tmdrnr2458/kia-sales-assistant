@@ -1,0 +1,129 @@
+// KIA Sales Assistant – Prisma Schema
+// Run: npx prisma db push  to apply
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Lead ────────────────────────────────────────────────────────────────────
+model Lead {
+  id               String        @id @default(cuid())
+  // Contact
+  firstName        String
+  lastName         String
+  phone            String?
+  email            String?
+  preferredContact String        @default("phone") // phone | email | text
+  language         String        @default("English")
+  // Needs Discovery
+  vehicleType      String?       // SUV | Sedan | Truck | EV | Any
+  budgetOTD        Float?        // Out-the-door budget
+  budgetMonthly    Float?        // Monthly payment target
+  downPayment      Float?
+  creditComfort    String?       // Excellent | Good | Fair | Poor | Unknown
+  term             Int?          // Loan term in months (36 | 48 | 60 | 72 | 84)
+  hasTradeIn       Boolean       @default(false)
+  tradeYear        Int?
+  tradeMake        String?
+  tradeModel       String?
+  tradeMileage     Int?
+  tradeCondition   String?
+  mustHaveFeatures String?       // Comma-separated
+  timeframe        String?       // ASAP | 1 week | 1 month | 3+ months | Just looking
+  notes            String?
+  // Pipeline & Scoring
+  status           String        @default("new")  // new | qualified | test_drive | offer | finance | closed_won | closed_lost
+  hotScore         Int           @default(0)       // 0-10 AI score
+  hotScoreReason   String?
+  source           String?       // walk-in | phone | website | referral | social
+  // Follow-up
+  nextFollowUp     DateTime?
+  followUpNote     String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  appointments Appointment[]
+  postKits     PostKit[]
+}
+
+// ─── Cached Vehicle Inventory ─────────────────────────────────────────────────
+model Vehicle {
+  id           String    @id @default(cuid())
+  stockNumber  String    @unique
+  type         String    // new | pre-owned
+  year         Int
+  make         String
+  model        String
+  trim         String?
+  exteriorColor String?
+  interiorColor String?
+  mileage      Int       @default(0)
+  price        Float?
+  msrp         Float?
+  vin          String?
+  url          String?   // VDP link
+  photos       String?   // JSON array of image URLs
+  features     String?   // JSON array
+  description  String?
+  isAvailable  Boolean   @default(true)
+  lastScraped  DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+
+  postKits PostKit[]
+}
+
+// ─── Appointment ──────────────────────────────────────────────────────────────
+model Appointment {
+  id             String   @id @default(cuid())
+  leadId         String
+  lead           Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  startTime      DateTime
+  endTime        DateTime
+  purpose        String   @default("test_drive") // test_drive | follow_up | delivery | finance | other
+  notes          String?
+  googleEventId  String?  // Google Calendar event ID (if synced)
+  status         String   @default("scheduled")  // scheduled | completed | cancelled | no_show
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ─── Facebook Post Kit ────────────────────────────────────────────────────────
+model PostKit {
+  id            String   @id @default(cuid())
+  vehicleId     String
+  vehicle       Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  leadId        String?
+  lead          Lead?    @relation(fields: [leadId], references: [id])
+  shortDesc     String   // ~100 chars – title/hook
+  mediumDesc    String   // ~300 chars – main post
+  longDesc      String   // ~600 chars – detailed listing
+  checklist     String   // JSON checklist items
+  carfaxNotes   String?  // Manual Carfax paste or placeholders
+  sellingPoints String?  // JSON array of bullet points
+  createdAt     DateTime @default(now())
+}
+
+// ─── Message Template ─────────────────────────────────────────────────────────
+model MessageTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  category  String   // greeting | follow_up | appointment | offer | nurture | closing
+  body      String
+  variables String?  // JSON list of {{variable}} names used
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Google OAuth Token (single-user, stored in DB for simplicity) ────────────
+model OAuthToken {
+  id           String   @id @default("singleton")
+  accessToken  String
+  refreshToken String?
+  expiryDate   BigInt?
+  updatedAt    DateTime @updatedAt
+}
