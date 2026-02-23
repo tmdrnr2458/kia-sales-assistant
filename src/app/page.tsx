@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { format, isToday, startOfDay, endOfDay } from "date-fns";
@@ -19,26 +21,36 @@ function ScoreBadge({ score }: { score: number }) {
 export default async function DashboardPage() {
   const now = new Date();
 
-  const [totalLeads, hotLeads, todayAppts, vehicles, recentLeads] = await Promise.all([
-    prisma.lead.count(),
-    prisma.lead.findMany({
-      where: { hotScore: { gte: 7 }, status: { notIn: ["closed_won", "closed_lost"] } },
-      orderBy: { hotScore: "desc" },
-      take: 5,
-      select: { id: true, firstName: true, lastName: true, hotScore: true, hotScoreReason: true, vehicleType: true, status: true },
-    }),
-    prisma.appointment.findMany({
-      where: { startTime: { gte: startOfDay(now), lte: endOfDay(now) }, status: { not: "cancelled" } },
-      include: { lead: { select: { firstName: true, lastName: true } } },
-      orderBy: { startTime: "asc" },
-    }),
-    prisma.vehicle.count({ where: { isAvailable: true } }),
-    prisma.lead.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 8,
-      select: { id: true, firstName: true, lastName: true, hotScore: true, status: true, vehicleType: true, createdAt: true },
-    }),
-  ]);
+  let totalLeads = 0;
+  let hotLeads: { id: string; firstName: string; lastName: string; hotScore: number; hotScoreReason: string | null; vehicleType: string | null; status: string }[] = [];
+  let todayAppts: { id: string; startTime: Date; purpose: string; lead: { firstName: string; lastName: string } }[] = [];
+  let vehicles = 0;
+  let recentLeads: { id: string; firstName: string; lastName: string; hotScore: number; status: string; vehicleType: string | null; createdAt: Date }[] = [];
+
+  try {
+    [totalLeads, hotLeads, todayAppts, vehicles, recentLeads] = await Promise.all([
+      prisma.lead.count(),
+      prisma.lead.findMany({
+        where: { hotScore: { gte: 7 }, status: { notIn: ["closed_won", "closed_lost"] } },
+        orderBy: { hotScore: "desc" },
+        take: 5,
+        select: { id: true, firstName: true, lastName: true, hotScore: true, hotScoreReason: true, vehicleType: true, status: true },
+      }),
+      prisma.appointment.findMany({
+        where: { startTime: { gte: startOfDay(now), lte: endOfDay(now) }, status: { not: "cancelled" } },
+        include: { lead: { select: { firstName: true, lastName: true } } },
+        orderBy: { startTime: "asc" },
+      }),
+      prisma.vehicle.count({ where: { isAvailable: true } }),
+      prisma.lead.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 8,
+        select: { id: true, firstName: true, lastName: true, hotScore: true, status: true, vehicleType: true, createdAt: true },
+      }),
+    ]);
+  } catch {
+    // DB not available at build time — render with empty defaults
+  }
 
   const pipelineMap: Record<string, string> = {
     new: "New", qualified: "Qualified", test_drive: "Test Drive",
