@@ -2,22 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --kia-red: #BB162B;
-  --kia-navy: #05141F;
-}
-
 body {
-  @apply bg-gray-50 text-gray-900;
+  @apply bg-slate-50 text-slate-900;
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { @apply bg-gray-100; }
-::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }
-
-/* Hot score badge colors */
-.score-low { @apply bg-gray-100 text-gray-600; }
-.score-mid { @apply bg-yellow-100 text-yellow-700; }
-.score-high { @apply bg-orange-100 text-orange-700; }
-.score-hot { @apply bg-red-100 text-red-700; }
+::-webkit-scrollbar-track { @apply bg-slate-100; }
+::-webkit-scrollbar-thumb { @apply bg-slate-300 rounded-full; }

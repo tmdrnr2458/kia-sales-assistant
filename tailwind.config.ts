@@ -5,13 +5,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        kia: {
-          red: "#BB162B",
-          "red-dark": "#8B0E1E",
-          navy: "#05141F",
-          "navy-light": "#0D2535",
-          silver: "#C8C9C7",
-          white: "#FFFFFF",
+        scout: {
+          blue: "#1D4ED8",
+          "blue-dark": "#1E3A8A",
+          green: "#16A34A",
+          amber: "#D97706",
+          red: "#DC2626",
+          slate: "#1E293B",
+          "slate-light": "#334155",
         },
       },
       fontFamily: {
