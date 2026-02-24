@@ -39,6 +39,29 @@ export interface EvaluationInputs {
   bodyStyle: BodyStyleType;
 }
 
+// ── Market Comps ─────────────────────────────────────────────────────────────
+
+export interface CompEntry {
+  id: string;
+  url?: string;
+  source?: string;
+  price?: number;
+  mileage?: number;
+  year?: number;
+}
+
+export interface CompStats {
+  count: number;
+  median: number;
+  p25: number;
+  p75: number;
+  avgMileage: number;
+  adjustedValue: number;
+  ratePerMile: number;
+}
+
+// ── Scoring ──────────────────────────────────────────────────────────────────
+
 export interface ScoreBreakdown {
   score: number;
   label: string;
@@ -53,9 +76,12 @@ export interface ScoreResults {
   verdict: 'BUY' | 'CONSIDER' | 'PASS';
   estimatedValue?: number;
   msrpUsed?: number;
+  compStats?: CompStats;
   talkTrackShort: string;
   talkTrackEmail: string;
 }
+
+// ── Payment Calculator ────────────────────────────────────────────────────────
 
 export interface PaymentInputs {
   price: number;

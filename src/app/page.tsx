@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Car, BarChart3, FileText, ChevronRight } from 'lucide-react';
-import type { VehicleData, EvaluationInputs, ScoreResults } from '@/types';
+import type { VehicleData, EvaluationInputs, ScoreResults, CompStats } from '@/types';
 import { computeScores } from '@/lib/scoring';
 import UrlStep from '@/components/UrlStep';
 import EvalStep from '@/components/EvalStep';
@@ -11,15 +11,15 @@ import ReportCard from '@/components/ReportCard';
 type Step = 1 | 2 | 3;
 
 const STEPS = [
-  { id: 1, label: 'Listing', icon: Car },
+  { id: 1, label: 'Listing',  icon: Car },
   { id: 2, label: 'Evaluate', icon: BarChart3 },
-  { id: 3, label: 'Report', icon: FileText },
+  { id: 3, label: 'Report',   icon: FileText },
 ] as const;
 
 export default function HomePage() {
-  const [step, setStep] = useState<Step>(1);
+  const [step,    setStep]    = useState<Step>(1);
   const [vehicle, setVehicle] = useState<VehicleData | null>(null);
-  const [scores, setScores] = useState<ScoreResults | null>(null);
+  const [scores,  setScores]  = useState<ScoreResults | null>(null);
 
   function handleVehicleReady(data: VehicleData) {
     setVehicle(data);
@@ -27,9 +27,9 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function handleScore(inputs: EvaluationInputs) {
+  function handleScore(inputs: EvaluationInputs, compStats?: CompStats) {
     if (!vehicle) return;
-    const result = computeScores(vehicle, inputs);
+    const result = computeScores(vehicle, inputs, compStats);
     setScores(result);
     setStep(3);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -60,20 +60,16 @@ export default function HomePage() {
           {/* Step indicator */}
           <div className="flex items-center gap-1">
             {STEPS.map((s, i) => {
-              const Icon = s.icon;
+              const Icon  = s.icon;
               const active = step === s.id;
-              const done = step > s.id;
+              const done   = step > s.id;
               return (
                 <div key={s.id} className="flex items-center gap-1">
-                  <div
-                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition ${
-                      active
-                        ? 'bg-blue-700 text-white'
-                        : done
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-slate-100 text-slate-400'
-                    }`}
-                  >
+                  <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition ${
+                    active ? 'bg-blue-700 text-white'
+                    : done  ? 'bg-blue-100 text-blue-700'
+                    :         'bg-slate-100 text-slate-400'
+                  }`}>
                     <Icon size={12} />
                     <span className="hidden sm:inline">{s.label}</span>
                     <span className="sm:hidden">{s.id}</span>
@@ -93,9 +89,7 @@ export default function HomePage() {
         {step === 1 && (
           <section>
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-slate-900">
-                Evaluate a Used Car Listing
-              </h1>
+              <h1 className="text-2xl font-bold text-slate-900">Evaluate a Used Car Listing</h1>
               <p className="text-slate-500 mt-1">
                 Get a deal score, risk score, and clear verdict in under 2 minutes.
               </p>
@@ -111,7 +105,7 @@ export default function HomePage() {
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-slate-900">Evaluate This Vehicle</h1>
               <p className="text-slate-500 mt-1">
-                Answer a few questions to score the deal, risk, and fit.
+                Add market comps for accurate pricing, then answer risk and fit questions.
               </p>
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
@@ -141,10 +135,10 @@ export default function HomePage() {
       <footer className="border-t border-slate-200 mt-12 py-6">
         <div className="max-w-2xl mx-auto px-4 text-center text-xs text-slate-400 space-y-1">
           <p>
-            Deal Scout uses publicly available market data and heuristic models.
+            Deal Scout uses market comps and heuristic models.
             Scores are estimates — always do a pre-purchase inspection.
           </p>
-          <p>No data stored. All analysis runs in your browser.</p>
+          <p>No data stored externally. Comps saved to your browser only.</p>
         </div>
       </footer>
     </div>

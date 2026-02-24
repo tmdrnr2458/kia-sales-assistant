@@ -1,63 +1,76 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import type {
   VehicleData,
   EvaluationInputs,
   UseCaseKey,
   DrivetrainType,
   BodyStyleType,
+  CompEntry,
+  CompStats,
 } from '@/types';
+import CompsPanel from './CompsPanel';
 
 const USE_CASES: { key: UseCaseKey; label: string; emoji: string }[] = [
-  { key: 'commute', label: 'Daily Commute', emoji: '🚗' },
-  { key: 'family', label: 'Family Use', emoji: '👨‍👩‍👧' },
-  { key: 'offroad', label: 'Off-Road', emoji: '🏔️' },
-  { key: 'reliability', label: 'Long-Term Reliability', emoji: '🔧' },
-  { key: 'budget', label: 'Budget-Friendly', emoji: '💰' },
-  { key: 'mpg', label: 'Fuel Economy', emoji: '⛽' },
+  { key: 'commute',     label: 'Daily Commute',          emoji: '🚗' },
+  { key: 'family',      label: 'Family Use',             emoji: '👨‍👩‍👧' },
+  { key: 'offroad',     label: 'Off-Road',               emoji: '🏔️' },
+  { key: 'reliability', label: 'Long-Term Reliability',  emoji: '🔧' },
+  { key: 'budget',      label: 'Budget-Friendly',        emoji: '💰' },
+  { key: 'mpg',         label: 'Fuel Economy',           emoji: '⛽' },
 ];
 
 const DRIVETRAINS: { value: DrivetrainType; label: string }[] = [
-  { value: 'FWD', label: 'FWD' },
-  { value: 'RWD', label: 'RWD' },
-  { value: 'AWD', label: 'AWD' },
-  { value: '4WD', label: '4WD / 4x4' },
+  { value: 'FWD',     label: 'FWD' },
+  { value: 'RWD',     label: 'RWD' },
+  { value: 'AWD',     label: 'AWD' },
+  { value: '4WD',     label: '4WD / 4x4' },
   { value: 'unknown', label: 'Unknown' },
 ];
 
 const BODY_STYLES: { value: BodyStyleType; label: string }[] = [
-  { value: 'sedan', label: 'Sedan' },
-  { value: 'suv', label: 'SUV / Crossover' },
-  { value: 'truck', label: 'Truck' },
-  { value: 'van', label: 'Van / Minivan' },
-  { value: 'coupe', label: 'Coupe' },
+  { value: 'sedan',     label: 'Sedan' },
+  { value: 'suv',       label: 'SUV / Crossover' },
+  { value: 'truck',     label: 'Truck' },
+  { value: 'van',       label: 'Van / Minivan' },
+  { value: 'coupe',     label: 'Coupe' },
   { value: 'hatchback', label: 'Hatchback' },
-  { value: 'wagon', label: 'Wagon' },
-  { value: 'unknown', label: 'Unknown' },
+  { value: 'wagon',     label: 'Wagon' },
+  { value: 'unknown',   label: 'Unknown' },
 ];
 
 interface Props {
   vehicle: VehicleData;
-  onScore: (inputs: EvaluationInputs) => void;
+  onScore: (inputs: EvaluationInputs, compStats?: CompStats) => void;
   onBack: () => void;
 }
 
 export default function EvalStep({ vehicle, onScore, onBack }: Props) {
   // Risk inputs
-  const [hasAccident, setHasAccident] = useState<boolean>(vehicle.accidentHint ?? false);
-  const [isSalvage, setIsSalvage] = useState(false);
-  const [ownerCount, setOwnerCount] = useState<number>(vehicle.ownerHint ?? 1);
-  const [isRentalFleet, setIsRentalFleet] = useState(false);
+  const [hasAccident,       setHasAccident]       = useState<boolean>(vehicle.accidentHint ?? false);
+  const [isSalvage,         setIsSalvage]         = useState(false);
+  const [ownerCount,        setOwnerCount]        = useState<number>(vehicle.ownerHint ?? 1);
+  const [isRentalFleet,     setIsRentalFleet]     = useState(false);
   const [hasServiceRecords, setHasServiceRecords] = useState(true);
 
   // Fit inputs
-  const [useCases, setUseCases] = useState<UseCaseKey[]>(['reliability']);
+  const [useCases,  setUseCases]  = useState<UseCaseKey[]>(['reliability']);
   const [drivetrain, setDrivetrain] = useState<DrivetrainType>('unknown');
-  const [bodyStyle, setBodyStyle] = useState<BodyStyleType>('unknown');
+  const [bodyStyle,  setBodyStyle]  = useState<BodyStyleType>('unknown');
 
   // Deal inputs
   const [msrpOverride, setMsrpOverride] = useState('');
+
+  // Comp state (managed by CompsPanel, surfaced here)
+  const [compStats, setCompStats] = useState<CompStats | null>(null);
+
+  const handleCompsChange = useCallback(
+    (_comps: CompEntry[], stats: CompStats | null) => {
+      setCompStats(stats);
+    },
+    [],
+  );
 
   function toggleUseCase(key: UseCaseKey) {
     setUseCases((prev) =>
@@ -66,17 +79,20 @@ export default function EvalStep({ vehicle, onScore, onBack }: Props) {
   }
 
   function handleSubmit() {
-    onScore({
-      hasAccident,
-      isSalvage,
-      ownerCount,
-      isRentalFleet,
-      hasServiceRecords,
-      useCases,
-      drivetrain,
-      bodyStyle,
-      msrpOverride: msrpOverride ? parseFloat(msrpOverride) : undefined,
-    });
+    onScore(
+      {
+        hasAccident,
+        isSalvage,
+        ownerCount,
+        isRentalFleet,
+        hasServiceRecords,
+        useCases,
+        drivetrain,
+        bodyStyle,
+        msrpOverride: msrpOverride ? parseFloat(msrpOverride) : undefined,
+      },
+      compStats ?? undefined,
+    );
   }
 
   return (
@@ -99,11 +115,18 @@ export default function EvalStep({ vehicle, onScore, onBack }: Props) {
         </button>
       </div>
 
+      {/* Market Comps */}
+      <CompsPanel
+        vehicle={vehicle}
+        bodyStyle={bodyStyle}
+        onChange={handleCompsChange}
+      />
+
       {/* Section A: Deal */}
-      <Section title="A · Deal Analysis" subtitle="Help us estimate market value">
+      <Section title="A · Deal Analysis" subtitle="Heuristic fallback — comps above override this when ≥ 3 are added">
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-1">
-            Original MSRP / purchase price (optional)
+            Original MSRP / sticker price (optional)
           </label>
           <div className="flex items-center gap-2">
             <span className="text-slate-500">$</span>
@@ -116,9 +139,15 @@ export default function EvalStep({ vehicle, onScore, onBack }: Props) {
               className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            If you know the original sticker price, enter it here for a more accurate deal score.
-          </p>
+          {compStats ? (
+            <p className="text-xs text-green-700 font-medium mt-1">
+              Comp-based pricing active ({compStats.count} comps) — MSRP field ignored for deal score.
+            </p>
+          ) : (
+            <p className="text-xs text-slate-400 mt-1">
+              If you know the original sticker price, enter it here for a more accurate heuristic estimate.
+            </p>
+          )}
         </div>
       </Section>
 
@@ -142,9 +171,7 @@ export default function EvalStep({ vehicle, onScore, onBack }: Props) {
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Number of previous owners
               {vehicle.ownerHint != null && (
-                <span className="ml-2 text-xs text-blue-600">
-                  (detected: {vehicle.ownerHint})
-                </span>
+                <span className="ml-2 text-xs text-blue-600">(detected: {vehicle.ownerHint})</span>
               )}
             </label>
             <select
@@ -153,9 +180,7 @@ export default function EvalStep({ vehicle, onScore, onBack }: Props) {
               className="border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {[1, 2, 3, 4, 5].map((n) => (
-                <option key={n} value={n}>
-                  {n} {n === 1 ? 'owner' : 'owners'}
-                </option>
+                <option key={n} value={n}>{n} {n === 1 ? 'owner' : 'owners'}</option>
               ))}
             </select>
           </div>
@@ -177,9 +202,7 @@ export default function EvalStep({ vehicle, onScore, onBack }: Props) {
       <Section title="C · Fit & Use Case" subtitle="What will you use it for?">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Select all that apply
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Select all that apply</label>
             <div className="flex flex-wrap gap-2">
               {USE_CASES.map(({ key, label, emoji }) => (
                 <button
@@ -238,14 +261,8 @@ export default function EvalStep({ vehicle, onScore, onBack }: Props) {
   );
 }
 
-function Section({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
+function Section({ title, subtitle, children }: {
+  title: string; subtitle: string; children: React.ReactNode;
 }) {
   return (
     <div className="border border-slate-200 rounded-2xl overflow-hidden">
@@ -258,18 +275,9 @@ function Section({
   );
 }
 
-function YesNoField({
-  label,
-  value,
-  onChange,
-  hint,
-  invertColor = false,
-}: {
-  label: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-  hint?: string;
-  invertColor?: boolean;
+function YesNoField({ label, value, onChange, hint, invertColor = false }: {
+  label: string; value: boolean; onChange: (v: boolean) => void;
+  hint?: string; invertColor?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-4">
@@ -278,38 +286,19 @@ function YesNoField({
         {hint && <p className="text-xs text-blue-600 mt-0.5">{hint}</p>}
       </div>
       <div className="flex gap-2 shrink-0">
-        <ToggleBtn
-          active={value === true}
-          onClick={() => onChange(true)}
-          label="Yes"
-          color={invertColor ? 'green' : 'red'}
-        />
-        <ToggleBtn
-          active={value === false}
-          onClick={() => onChange(false)}
-          label="No"
-          color={invertColor ? 'red' : 'green'}
-        />
+        <ToggleBtn active={value === true}  onClick={() => onChange(true)}  label="Yes" color={invertColor ? 'green' : 'red'} />
+        <ToggleBtn active={value === false} onClick={() => onChange(false)} label="No"  color={invertColor ? 'red' : 'green'} />
       </div>
     </div>
   );
 }
 
-function ToggleBtn({
-  active,
-  onClick,
-  label,
-  color,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  color: 'green' | 'red';
+function ToggleBtn({ active, onClick, label, color }: {
+  active: boolean; onClick: () => void; label: string; color: 'green' | 'red';
 }) {
-  const activeClass =
-    color === 'green'
-      ? 'bg-green-600 text-white border-green-600'
-      : 'bg-red-600 text-white border-red-600';
+  const activeClass = color === 'green'
+    ? 'bg-green-600 text-white border-green-600'
+    : 'bg-red-600 text-white border-red-600';
   return (
     <button
       type="button"
